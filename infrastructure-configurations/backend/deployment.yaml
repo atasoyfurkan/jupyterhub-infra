@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: atasoy/backend-tumchainbook:v1.3
+        ports:
+        - containerPort: 8000
+        env:
+          - name: PYTHONUNBUFFERED
+            value: '1'
+          - name: SITE_URL
+            value: backend.atasoyfurkan.tech
+          - name: DJANGO_SETTINGS_MODULE
+            value: apps.core.settings.production
+          - name: SHARED_STORAGE_PATH
+            value: /home/shared
+          - name: DB_NAME
+            value: "postgres"
+          - name: DB_PW
+            valueFrom:
+              secretKeyRef:
+                name: backend-db-postgresql
+                key: postgres-password
+          - name: DB_USER
+            value: "postgres"
+          - name: DB_HOST
+            value: "backend-db-postgresql.default.svc.cluster.local"
+          - name: DB_PORT
+            value: "5432"
+          - name: JUPYTERHUB_BASE_URL
+            value: https://hub.atasoyfurkan.tech/hub/api
+          - name: JUPYTERHUB_OAUTH_CLIENT_ID
+            value: "service-chainbook-ui"
+          - name: JUPYTERHUB_OAUTH_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: hub
+                key: hub.services.chainbook-ui.apiToken
+          - name: JUPYTERHUB_OAUTH_REDIRECT_URI
+            value: https://frontend.atasoyfurkan.tech/oauth_callback
+          - name: JUPYTERHUB_API_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: jupyterhub-manual-secrets
+                key: api_token
+        volumeMounts:
+          - name: jupyterhub-shared-volume
+            mountPath: /home/shared
+      volumes:
+        - name: jupyterhub-shared-volume
+          persistentVolumeClaim:
+            claimName: jupyterhub-shared-volume

@@ -1,0 +1,37 @@
+@startuml
+left to right direction
+
+component "Web App"
+
+package "JupyterHub" {
+    component [Hub] as Hub
+    component [Proxy]
+    component [Single-user Jupyter Servers] as NotebookServers
+    database "Hub-related DB" {
+    }
+  
+    Proxy --> Hub: forwards\nrequests (REST)
+    Proxy --> NotebookServers: forwards\nrequests (WebSocket)
+    Hub --> NotebookServers: spawns servers
+    Hub --> [Hub-related DB]: stores hub-related data
+}
+
+package "Processing Service" {
+    [Blockchain]
+    [Processing Service API]
+    [Cronjob for Data Query]
+
+    [Processing Service API] --> [Blockchain] : connects
+    [Cronjob for Data Query] --> [Processing Service API]: queries
+}
+
+database "Shared Persistent Volume" {
+}
+
+
+[NotebookServers] ..> [Shared Persistent Volume] : accesses (read-only)
+[Cronjob for Data Query] ..> [Shared Persistent Volume] : updates
+
+[Web App] --> [Proxy]: connects (REST\nand WebSocket)
+
+@enduml
